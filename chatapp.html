@@ -12,10 +12,48 @@
     <title>Chat App</title>
 </head>
 <body>
-    <div><h1 class="text-center">Chat App</h1></div>
-    <div class="text-center bg-secondary p-3">
-        <input type="text" class="w-50 p-1">
-        <button class="btn btn-primary">Send</button>
+    <div class="d-flex flex-column">
+        <h1 class="d-inline text-center">Chat App</h1>
+        <div class="container">
+            <ul id="messages" class="list-group text-center"></ul>
+        </div>
+        <div class="text-center position-fixed bottom-0 end-0 w-100 bg-secondary p-2">
+            <input type="text" id="message" name="message" class="w-75">
+            <button class="btn btn-success" onclick="submitForm(event)">Send</button>
+        </div>
     </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.5.1/axios.min.js"></script>
+    <script>
+        function submitForm(event) {
+            event.preventDefault();
+            const msg = document.getElementById('message').value;
+            const token = localStorage.getItem('token');
+            axios.post('http://localhost:3000/chat/sendmessage', {message: msg}, {
+                headers: { Authorization: token },
+            }).then((response) => {
+                addItem(response.data);
+            }).catch(err => {console.log(err)});
+        }
+        setTimeout(async() => {
+            try {
+                const token = localStorage.getItem('token');
+                await axios.get('http://localhost:3000/chat/messages', {
+                    headers: { Authorization: token },
+                }).then((response) => {
+                    for (let i=0;i<response.data.length;i++) {
+                        addItem(response.data[i]);
+                    }
+                })
+            } catch (err) {
+                console.log(err);
+            }
+        }, 1000)
+        function addItem(item) {
+            document.getElementById('message').value = '';
+            const parentElem = document.getElementById('messages');
+            const childElem = `<li class='list-group-item' id=${item.id}>${item.userName}: ${item.message}</li>`;
+            parentElem.innerHTML = parentElem.innerHTML + childElem;
+        }
+    </script>
 </body>
 </html>
