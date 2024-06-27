@@ -14,8 +14,13 @@
 <body>
     <div class="d-flex flex-column">
         <h1 class="d-inline text-center">Chat App</h1>
-        <div class="container">
-            <ul id="messages" class="list-group text-center"></ul>
+        <div class="row justify-content-start">
+            <div class="col">
+                <ul id="groups" class="nav flex-column"></ul>
+            </div>
+            <div class="col">
+                <ul id="messages" class="list-group text-center"></ul>
+            </div>
         </div>
         <div class="text-center position-fixed bottom-0 end-0 w-100 bg-secondary p-2">
             <input type="text" id="message" name="message" class="w-75">
@@ -34,20 +39,21 @@
                 addItem(response.data);
             }).catch(err => {console.log(err)});
         }
-        setTimeout(async() => {
+        window.addEventListener('DOMContentLoaded', async () => {
             try {
                 const token = localStorage.getItem('token');
-                await axios.get('http://localhost:3000/chat/messages', {
+                await axios.get(`http://localhost:3000/chat/messages`, {
                     headers: { Authorization: token },
                 }).then((response) => {
                     for (let i=0;i<response.data.length;i++) {
                         addItem(response.data[i]);
                     }
                 })
+                
             } catch (err) {
                 console.log(err);
             }
-        }, 1000)
+        })
         function addItem(item) {
             document.getElementById('message').value = '';
             const parentElem = document.getElementById('messages');
