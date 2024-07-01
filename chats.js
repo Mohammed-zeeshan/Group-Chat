@@ -1,4 +1,3 @@
-const { where } = require('sequelize');
 const Chats = require('../models/chats');
 const Group = require('../models/group');
 const SignUp = require('../models/signup');
