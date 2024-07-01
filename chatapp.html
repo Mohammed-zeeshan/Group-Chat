@@ -16,10 +16,14 @@
         <h1 class="d-inline text-center">Chat App</h1>
         <div class="row justify-content-start">
             <div class="col">
-                <ul id="groups" class="nav flex-column"></ul>
+                <ul id="groups" class="nav flex-column ms-5">
+                    <li class="nav-item"><button class="btn btn-primary" onclick="openForm()">Create group</button></li>
+                </ul>
             </div>
             <div class="col">
-                <ul id="messages" class="list-group text-center"></ul>
+                <ul id="messages" class="list-group text-center">
+                    <li class="list-group-item border-0" style="visibility: hidden;" id="button"><button class="btn btn-success" onclick="addmember()">Add Member</button></li>
+                </ul>
             </div>
         </div>
         <div class="text-center position-fixed bottom-0 end-0 w-100 bg-secondary p-2">
@@ -29,35 +33,92 @@
     </div>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.5.1/axios.min.js"></script>
     <script>
+        const socket = io('http://localhost:3000');
+        socket.on('user-connected', () => {
+            console.log('A user connected');
+        })
+        socket.on('user-disconnected', () => {
+            console.log('A user disconnected');
+        })
         function submitForm(event) {
             event.preventDefault();
             const msg = document.getElementById('message').value;
             const token = localStorage.getItem('token');
-            axios.post('http://localhost:3000/chat/sendmessage', {message: msg}, {
-                headers: { Authorization: token },
-            }).then((response) => {
-                addItem(response.data);
-            }).catch(err => {console.log(err)});
+            const id = localStorage.getItem('group');
+            socket.emit('send-chat-message', msg);
         }
         window.addEventListener('DOMContentLoaded', async () => {
             try {
                 const token = localStorage.getItem('token');
-                await axios.get(`http://localhost:3000/chat/messages`, {
+                await axios.get('http://localhost:3000/chat/grouplist', {
                     headers: { Authorization: token },
                 }).then((response) => {
-                    for (let i=0;i<response.data.length;i++) {
-                        addItem(response.data[i]);
+                    const groups = response.data[0].groups;
+                    for (let i=0;i<groups.length;i++){
+                        grouplists(groups[i]);
                     }
-                })
-                
+                }).catch((err) => {
+                    console.log(err);
+                });
             } catch (err) {
                 console.log(err);
             }
-        })
+        });
+        async function getmessages(id, admin) {
+            try {
+                const token = localStorage.getItem('token');
+                const decodeToken = parseJwt(token);
+                if (decodeToken.userId === admin) {
+                    showAddButton();
+                }
+                localStorage.removeItem('group');
+                localStorage.setItem('group', id);
+                await axios.get(`http://localhost:3000/chat/messages/${id}`, {
+                    headers: { Authorization: token },
+                }).then((response) => {
+                    for (let i=0;i<response.data.length;i++){
+                        addItem(response.data[i]);
+                    }
+                }).catch((err) => {
+                    console.log(err);
+                });
+            } catch (err) {
+                console.log(err);
+            }
+        }
+        function showAddButton() {
+            document.getElementById('button').style.visibility = 'visible';
+        }
+        function parseJwt(token) {
+        var base64Url = token.split(".")[1];
+        var base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+        var jsonPayload = decodeURIComponent(
+          window
+            .atob(base64)
+            .split("")
+            .map(function (c) {
+              return "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2);
+            })
+            .join("")
+        );
+
+        return JSON.parse(jsonPayload);
+      }
+        function openForm() {
+            window.location.href = '../Create group/form.html';
+        }
+        function addmember() {
+            window.location.href = '../Add Member/form.html';
+        }
         function addItem(item) {
             document.getElementById('message').value = '';
             const parentElem = document.getElementById('messages');
             const childElem = `<li class='list-group-item' id=${item.id}>${item.userName}: ${item.message}</li>`;
+            parentElem.innerHTML = parentElem.innerHTML + childElem;
+        }
+        function grouplists(item) {
+            const parentElem = document.getElementById('groups');
+            const childElem = `<li class="nav-item" id=${item.id}><button onclick="getmessages(${item.id}, ${item.admin})" class="btn btn-light">${item.name}</button></li>`;
             parentElem.innerHTML = parentElem.innerHTML + childElem;
         }
     </script>
